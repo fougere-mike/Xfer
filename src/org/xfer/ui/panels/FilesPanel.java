@@ -89,6 +89,17 @@ public class FilesPanel extends WebPanel
 						}
 					});
 				}
+
+				@Override
+				public void onPeerDisconnected(Peer peer) {
+					EventQueue.invokeLater(new Runnable(){
+						@Override
+						public void run()
+						{
+							onPeersChanged();
+						}
+					});
+				}
 			});
 		}
 		

@@ -5,6 +5,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 
+import org.xfer.Logger;
+
 public class Protocol 
 {
 	public static final int	MIN_PORT			= 1024;
@@ -29,37 +31,95 @@ public class Protocol
 	public void connectToServer() throws IOException
 	{
 		String serverKey = "";
-		
-		socketWriter.writeUTF( HANDSHAKE_KEY_CLIENT );
-		socketWriter.flush();
-		
-		serverKey = socketReader.readUTF();
-		if( !serverKey.equals( HANDSHAKE_KEY_SERVER ) )
-			throw new IOException("Server did not transmit correct key");
-		
-		socketWriter.writeUTF( HANDSHAKE_KEY_CONFIRM );
-		socketWriter.flush();
-		
-		serverKey = socketReader.readUTF();
-		if( !serverKey.equals( HANDSHAKE_KEY_CONFIRM ) )
-			throw new IOException("Server did not confirm connection");
+		synchronized(socketReader)
+		{
+			synchronized(socketWriter)
+			{
+				socketWriter.writeUTF( HANDSHAKE_KEY_CLIENT );
+				socketWriter.flush();
+				
+				serverKey = socketReader.readUTF();
+				if( !serverKey.equals( HANDSHAKE_KEY_SERVER ) )
+					throw new IOException("Server did not transmit correct key");
+				
+				socketWriter.writeUTF( HANDSHAKE_KEY_CONFIRM );
+				socketWriter.flush();
+				
+				serverKey = socketReader.readUTF();
+				if( !serverKey.equals( HANDSHAKE_KEY_CONFIRM ) )
+					throw new IOException("Server did not confirm connection");
+			}
+		}
 	}
 	
 	public void connectToClient() throws IOException
 	{
-		String clientKey = socketReader.readUTF();
-		if( !clientKey.equals( HANDSHAKE_KEY_CLIENT ) )
-			throw new IOException("Client did not transmit correct key");
+		synchronized(socketReader)
+		{
+			synchronized(socketWriter)
+			{
+				String clientKey = socketReader.readUTF();
+				if( !clientKey.equals( HANDSHAKE_KEY_CLIENT ) )
+					throw new IOException("Client did not transmit correct key");
+				
+				socketWriter.writeUTF( HANDSHAKE_KEY_SERVER );
+				socketWriter.flush();
+			
+				clientKey = socketReader.readUTF();
+				if( !clientKey.equals( HANDSHAKE_KEY_CONFIRM ) )
+					throw new IOException("Client did not confirm connection");
+			
+				socketWriter.writeUTF( HANDSHAKE_KEY_CONFIRM );
+				socketWriter.flush();
+			}
+		}
+	}
 	
-		socketWriter.writeUTF( HANDSHAKE_KEY_SERVER );
-		socketWriter.flush();
+	public void disconnect()
+	{
+		Message msg = Message.DISCONNECT;
+		try
+		{
+			sendMessage(msg);
+			socket.close();
+		}catch(IOException e)
+		{
+			Logger.Log("Protocol.disconnect", "Failed to send disconnect message.");
+		}
+	}
+	
+	public Message receiveMessage() throws IOException
+	{
+		Message msg = null;
+		synchronized(socketReader)
+		{
+			int type 	= socketReader.readInt();
+			int dataLen	= socketReader.readInt();
+			
+			if( type < 0 || type > MessageType.values().length || dataLen < 0 )
+				return null;
+			
+			byte[] data	= new byte[dataLen];
+			
+			int count = socketReader.read(data);
+			if( count < dataLen )
+				return null;
+			
+			MessageType msgType = MessageType.values()[type];
+			msg = new Message(msgType, new String(data));
+		}
 		
-		clientKey = socketReader.readUTF();
-		if( !clientKey.equals( HANDSHAKE_KEY_CONFIRM ) )
-			throw new IOException("Client did not confirm connection");
-		
-		socketWriter.writeUTF( HANDSHAKE_KEY_CONFIRM );
-		socketWriter.flush();
+		return msg;
+	}
+	
+	public void sendMessage(Message message) throws IOException
+	{
+		byte[] data = message.toByteArray();
+		synchronized(socketWriter)
+		{
+			socketWriter.write(data);
+			socketWriter.flush();
+		}
 	}
 	
 	public Socket getSocket()

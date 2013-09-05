@@ -15,7 +15,10 @@ import javax.swing.JFrame;
 import javax.swing.JMenuBar;
 import javax.swing.JPanel;
 
+import org.xfer.Logger;
+import org.xfer.peer.Peer;
 import org.xfer.peer.PeerManager;
+import org.xfer.protocol.Protocol;
 import org.xfer.ui.panels.FilesPanel;
 
 import com.alee.laf.label.WebLabel;
@@ -71,7 +74,37 @@ public class MainWindow
 			}
 		});
 		
+		WebMenuItem itmConnect = new WebMenuItem("Connect");
+		itmConnect.setPlainFont();
+		itmConnect.setHotkey(Hotkey.CTRL_R);
+		itmConnect.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e)
+			{
+				try
+				{
+					PeerManager.connectToPeer("localhost");
+				}catch(IOException ioe)
+				{
+					Logger.Log("ActionListener", e.toString());
+				}
+			}
+		});
+		
+		WebMenuItem itmDisconnect = new WebMenuItem("Disconnect");
+		itmDisconnect.setPlainFont();
+		itmDisconnect.setHotkey(Hotkey.CTRL_D);
+		itmDisconnect.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e)
+			{	
+				PeerManager.disconnectFromAllPeers();
+			}
+		});
+		
+		
+		mnuXfer.add(itmConnect);
+		mnuXfer.add(itmDisconnect);
 		mnuXfer.add(itmExit);
+		
 		menuBar.add(mnuXfer);
 		menuBar.add(mnuSettings);
 		menuBar.add(mnuHelp);
@@ -98,17 +131,20 @@ public class MainWindow
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setSize(640, 480);
 		frame.setVisible(true);
+		
+		try
+		{
+			PeerManager.begin();
+		}catch(IOException e)
+		{
+			Logger.Log("PeerManager", e.toString());
+			Logger.Log("PeerManager", "Unable to listen for clients. Make sure there isn't another service " +
+					"running on port "+Protocol.DEFAULT_LISTEN_PORT);
+		}
 	}
 	
 	public static void main(String[] args)
 	{
-		try {
-			PeerManager.begin();
-			//PeerManager.connectToPeer("localhost");
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		EventQueue.invokeLater(new Runnable(){
 			public void run()
 			{

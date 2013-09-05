@@ -1,14 +1,10 @@
 package org.xfer.peer;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 import org.xfer.Logger;
 import org.xfer.protocol.Protocol;
@@ -18,10 +14,8 @@ public class Server extends Thread implements Runnable
 	protected ServerSocket		socket;
 	protected int				port;
 	
-	protected List<Socket>					clients;
-	protected Map<Socket, ClientHandler>	clientHandlers;
-	
-	protected List<StatusListener>			statusListeners;
+	protected List<Socket>			clients;
+	protected List<StatusListener>	statusListeners;
 	
 	public Server() throws IOException
 	{
@@ -37,7 +31,6 @@ public class Server extends Thread implements Runnable
 		
 		socket 			= new ServerSocket(this.port);
 		clients 		= new ArrayList<Socket>();
-		clientHandlers 	= new TreeMap<Socket, ClientHandler>();
 		statusListeners = new ArrayList<StatusListener>();
 	}
 	
@@ -79,6 +72,13 @@ public class Server extends Thread implements Runnable
 	protected void onClientConnected(Protocol protocol)
 	{
 		Logger.Log("Server.onClientConnected", "Client connected.");
+		if( statusListeners == null || statusListeners.isEmpty() )
+		{
+			Logger.Log("Server.onClientConnected", "No listeners registered. Disconnecting from client.");
+			protocol.disconnect();
+			return;
+		}
+		
 		for(StatusListener listener : statusListeners)
 			listener.onClientConnected(protocol);
 	}
@@ -105,18 +105,11 @@ public class Server extends Thread implements Runnable
 	{
 		protected Socket	socket;
 		protected Protocol	protocol;
-		protected boolean	connected;
 		
 		public ClientHandler(Socket client) throws IOException
 		{
 			socket 	  = client;
 			protocol  = new Protocol(socket);
-			connected = false;
-		}
-		
-		public boolean isConnected()
-		{
-			return connected;
 		}
 		
 		public void run()
@@ -126,14 +119,14 @@ public class Server extends Thread implements Runnable
 				Logger.Log("ClientHandler.run", "Connecting to client");
 				protocol.connectToClient();
 				
-				Server.this.clients.add(socket);
-				Server.this.clientHandlers.put(socket, this);
-				connected = true;
-				
 				onClientConnected(protocol);
 			}catch(Exception e)
 			{
 				Logger.Log("ClientHandler.run", e.toString());
+				try
+				{
+					protocol.getSocket().close();
+				}catch(Exception _e){}
 			}
 		}
 	}

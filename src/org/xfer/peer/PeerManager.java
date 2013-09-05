@@ -5,17 +5,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.xfer.Logger;
+import org.xfer.peer.Peer.PeerMessageListener;
+import org.xfer.protocol.Message;
+import org.xfer.protocol.MessageType;
 import org.xfer.protocol.Protocol;
 
 public class PeerManager 
 {
 	private static final PeerManager instance = new PeerManager();
-	protected Server			server;
-	protected List<Peer>		peers;
+	protected Server		server;
+	protected List<Peer>	peers;
 	
 	protected Client.StatusListener	clientListener;
 	protected Server.StatusListener	serverListener;
+	protected PeerMessageListener		peerMessageListener;
 	protected List<PeerListener>		peerListeners;
+	
 	private PeerManager()
 	{
 		peers = new ArrayList<Peer>();
@@ -73,6 +78,25 @@ public class PeerManager
 		return serverListener;
 	}
 	
+	protected PeerMessageListener getPeerMessageListener()
+	{
+		if( peerMessageListener == null )
+		{
+			peerMessageListener = new PeerMessageListener(){
+
+				@Override
+				public void onMessageReceived(Peer peer, Message message) {
+					if( message.getType() == MessageType.DISCONNECT )
+					{
+						onPeerDisconnected(peer);
+					}
+				}
+			};
+		}
+		
+		return peerMessageListener;
+	}
+	
 	protected synchronized void onPeerConnected(Peer peer)
 	{
 		if( peer == null )
@@ -81,9 +105,30 @@ public class PeerManager
 			return;
 		}
 		
+		peer.setConnected(true);
+		peer.addMessageListener(getPeerMessageListener());
 		peers.add(peer);
+		
+		new PeerMessageThread(peer).start();
 		Logger.Log("PeerManager.onPeerConnected", "Peer connected");
 		Logger.Log("PeerManager.onPeerConnected", "Total Peers: " + peers.size());
+		
+		for(PeerListener listener : peerListeners)
+			listener.onPeerConnected(peer);
+	}
+	
+	protected void onPeerDisconnected(Peer peer)
+	{
+		peer.getProtocol().disconnect();
+		peer.setConnected(false);
+		
+		synchronized(peers)
+		{
+			peers.remove(peer);
+		}
+		
+		Logger.Log("PeerManager.onPeerDisconnected", "Peer disconnected");
+		Logger.Log("PeerManager.onPeerDisconnected", "Total Peers: " + peers.size());
 		
 		for(PeerListener listener : peerListeners)
 			listener.onPeerConnected(peer);
@@ -131,8 +176,60 @@ public class PeerManager
 		client.connect(address, port);
 	}
 	
+	public static void disconnectFromPeer(Peer peer)
+	{
+		instance._disconnectFromPeer(peer);
+	}
+	
+	protected void _disconnectFromPeer(Peer peer)
+	{
+		onPeerDisconnected(peer);
+	}
+	
+	public static void disconnectFromAllPeers()
+	{
+		instance._disconnectFromAllPeers();
+	}
+	
+	protected void _disconnectFromAllPeers()
+	{
+		Peer[] peers = this.peers.toArray(new Peer[this.peers.size()]);
+		for(Peer peer : peers)
+			_disconnectFromPeer(peer);
+	}
+	
 	public interface PeerListener
 	{
 		public void onPeerConnected(Peer peer);
+		public void onPeerDisconnected(Peer peer);
+	}
+	
+	private class PeerMessageThread extends Thread implements Runnable
+	{
+		protected Peer peer;
+		public PeerMessageThread(Peer peer)
+		{
+			this.peer = peer;
+		}
+		
+		public void run()
+		{
+			try
+			{
+				Message msg = null;
+				while(peer.isConnected())
+				{
+					msg = peer.getProtocol().receiveMessage();
+					if( msg == null )
+						continue;
+					
+					for(PeerMessageListener listener : peer.getMessageListeners())
+						listener.onMessageReceived(peer, msg);
+				}
+			}catch(IOException ioe)
+			{
+				PeerManager.this.onPeerDisconnected(peer);
+			}
+		}
 	}
 }
