@@ -4,3 +4,6 @@
 *.jar
 *.war
 *.ear
+
+# Do not ignore deployed Jar File
+!Xfer.jar

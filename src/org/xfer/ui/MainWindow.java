@@ -8,12 +8,14 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.beans.PropertyChangeListener;
+import java.io.IOException;
 
 import javax.swing.Action;
 import javax.swing.JFrame;
 import javax.swing.JMenuBar;
 import javax.swing.JPanel;
 
+import org.xfer.peer.PeerManager;
 import org.xfer.ui.panels.FilesPanel;
 
 import com.alee.laf.label.WebLabel;
@@ -80,6 +82,7 @@ public class MainWindow
 		tabPane.setTabPlacement(WebTabbedPane.LEFT);
 		tabPane.setPlainFont();
 		tabPane.setFontName("Verdana");
+		tabPane.setFocusable(false);
 		
 		tabPane.addTab("Files", new FilesPanel());
 		tabPane.addTab("Chat", chatPanel);
@@ -99,6 +102,13 @@ public class MainWindow
 	
 	public static void main(String[] args)
 	{
+		try {
+			PeerManager.begin();
+			//PeerManager.connectToPeer("localhost");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		EventQueue.invokeLater(new Runnable(){
 			public void run()
 			{

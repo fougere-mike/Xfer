@@ -9,4 +9,9 @@ public class Peer
 	{
 		this.protocol = protocol;
 	}
+	
+	public String toString()
+	{
+		return protocol.getSocket().getRemoteSocketAddress().toString();
+	}
 }

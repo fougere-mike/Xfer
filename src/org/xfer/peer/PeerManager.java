@@ -15,9 +15,11 @@ public class PeerManager
 	
 	protected Client.StatusListener	clientListener;
 	protected Server.StatusListener	serverListener;
+	protected List<PeerListener>		peerListeners;
 	private PeerManager()
 	{
 		peers = new ArrayList<Peer>();
+		peerListeners = new ArrayList<PeerListener>();
 	}
 	
 	protected Client.StatusListener getClientStatusListener()
@@ -82,6 +84,22 @@ public class PeerManager
 		peers.add(peer);
 		Logger.Log("PeerManager.onPeerConnected", "Peer connected");
 		Logger.Log("PeerManager.onPeerConnected", "Total Peers: " + peers.size());
+		
+		for(PeerListener listener : peerListeners)
+			listener.onPeerConnected(peer);
+	}
+	
+	public static void addPeerListener(PeerListener listener)
+	{
+		if( listener == null || instance.peerListeners.contains(listener) )
+			return;
+		
+		instance.peerListeners.add(listener);
+	}
+	
+	public static List<Peer> GetPeers()
+	{
+		return instance.peers;
 	}
 	
 	public static void begin() throws IOException
@@ -111,5 +129,10 @@ public class PeerManager
 		Client client = new Client();
 		client.addStatusListener(getClientStatusListener());
 		client.connect(address, port);
+	}
+	
+	public interface PeerListener
+	{
+		public void onPeerConnected(Peer peer);
 	}
 }
