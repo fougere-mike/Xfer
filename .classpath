@@ -4,7 +4,7 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
 	<classpathentry kind="lib" path="weblaf-1.19.jar">
 		<attributes>
-			<attribute name="javadoc_location" value="jar:file:/home/mike/web.look.and.feel/weblaf-javadoc-1.19.zip!/"/>
+			<attribute name="javadoc_location" value="jar:platform:/resource/Xfer/weblaf-javadoc-1.19.zip!/"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="output" path="bin"/>
