@@ -9,6 +9,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
+import java.util.List;
 
 import javax.swing.Action;
 import javax.swing.JFrame;
@@ -18,13 +19,17 @@ import javax.swing.JPanel;
 import org.xfer.Logger;
 import org.xfer.peer.Peer;
 import org.xfer.peer.PeerManager;
+import org.xfer.peer.PeerManager.PeerListener;
 import org.xfer.protocol.Protocol;
 import org.xfer.ui.panels.FilesPanel;
 
 import com.alee.laf.label.WebLabel;
+import com.alee.laf.list.WebList;
 import com.alee.laf.menu.WebMenu;
 import com.alee.laf.menu.WebMenuBar;
 import com.alee.laf.menu.WebMenuItem;
+import com.alee.laf.scroll.WebScrollPane;
+import com.alee.laf.splitpane.WebSplitPane;
 import com.alee.laf.tabbedpane.WebTabbedPane;
 import com.alee.managers.hotkey.Hotkey;
 import com.alee.managers.hotkey.HotkeyData;
@@ -41,12 +46,14 @@ public class MainWindow
 	protected WebMenu		mnuSettings;
 	protected WebMenu		mnuHelp;
 	
+	protected WebMenuItem	itmDisconnect;
 	protected WebMenuItem	itmExit;
+	protected WebMenuItem	itmConnect;
 	
 	protected WebTabbedPane	tabPane;
 	
 	public MainWindow()
-	{
+	{		
 		frame = new JFrame();
 		contentPane = new JPanel();
 		filePanel = new JPanel();
@@ -74,7 +81,7 @@ public class MainWindow
 			}
 		});
 		
-		WebMenuItem itmConnect = new WebMenuItem("Connect");
+		itmConnect = new WebMenuItem("Connect");
 		itmConnect.setPlainFont();
 		itmConnect.setHotkey(Hotkey.CTRL_R);
 		itmConnect.addActionListener(new ActionListener(){
@@ -90,7 +97,7 @@ public class MainWindow
 			}
 		});
 		
-		WebMenuItem itmDisconnect = new WebMenuItem("Disconnect");
+		itmDisconnect = new WebMenuItem("Disconnect");
 		itmDisconnect.setPlainFont();
 		itmDisconnect.setHotkey(Hotkey.CTRL_D);
 		itmDisconnect.addActionListener(new ActionListener(){

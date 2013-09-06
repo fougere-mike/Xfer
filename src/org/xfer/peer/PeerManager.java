@@ -21,6 +21,8 @@ public class PeerManager
 	protected PeerMessageListener		peerMessageListener;
 	protected List<PeerListener>		peerListeners;
 	
+	protected boolean listening;
+	
 	private PeerManager()
 	{
 		peers = new ArrayList<Peer>();
@@ -157,6 +159,13 @@ public class PeerManager
 		server = new Server();
 		server.addStatusListener(getServerStatusListener());
 		server.start();
+		
+		setListening(true);
+	}
+	
+	public static PeerManager getInstance()
+	{
+		return instance;
 	}
 	
 	public static void connectToPeer(String address, int port) throws IOException
@@ -198,6 +207,16 @@ public class PeerManager
 			_disconnectFromPeer(peer);
 	}
 	
+	
+	public boolean isListening() {
+		return listening;
+	}
+
+	public void setListening(boolean listening) {
+		this.listening = listening;
+	}
+
+
 	public interface PeerListener
 	{
 		public void onPeerConnected(Peer peer);
