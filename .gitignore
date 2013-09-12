@@ -7,3 +7,4 @@
 
 # Do not ignore deployed Jar File
 !Xfer.jar
+!weblaf-1.19.jar
